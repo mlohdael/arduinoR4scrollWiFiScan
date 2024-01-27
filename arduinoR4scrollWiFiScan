@@ -1,0 +1,101 @@
+#include <WiFiS3.h>
+#include "ArduinoGraphics.h"
+#include "Arduino_LED_Matrix.h"
+
+ArduinoLEDMatrix matrix;
+
+void setup() {
+  Serial.begin(115200);
+  matrix.begin();
+
+  matrix.beginDraw();
+  matrix.stroke(0xFFFFFFFF);
+  const char text[] = " ";
+  matrix.textFont(Font_4x6);
+  matrix.beginText(0, 1, 0xFFFFFF);
+  matrix.println(text);
+  matrix.endText();
+  matrix.endDraw();
+
+  delay(2000);
+}
+
+void loop() {
+  matrix.beginDraw();
+
+  matrix.stroke(0xFFFFFFFF);
+  matrix.textScrollSpeed(50);
+
+  const char scanningText[] = "Scanning available networks...";
+  matrix.textFont(Font_5x7);
+  matrix.beginText(0, 1, 0xFFFFFF);
+  matrix.println(scanningText);
+  matrix.endText(SCROLL_LEFT);
+
+  matrix.endDraw();
+
+  delay(2500);  // Display the scanning message for 5 seconds
+
+  // Perform WiFi scan and display results on the LED matrix
+  displayWiFiScanResults();
+
+  delay(2500);  // Wait for 5 seconds before the next scan
+}
+
+void displayWiFiScanResults() {
+  matrix.beginDraw();
+
+  matrix.stroke(0xFFFFFFFF);
+  matrix.textScrollSpeed(50); // Set a slower scroll speed for SSID names
+
+  int numSsid = WiFi.scanNetworks();
+  if (numSsid == -1) {
+    const char errorMsg[] = "Couldn't get a WiFi connection";
+    matrix.textFont(Font_5x7);
+    matrix.beginText(0, 1, 0xFF0000);
+    matrix.println(errorMsg);
+    matrix.endText(SCROLL_LEFT);
+  } else {
+    for (int thisNet = 0; thisNet < numSsid; thisNet++) {
+      matrix.textFont(Font_5x7);
+      matrix.beginText(0, 1, 0xFFFFFF);
+      matrix.print(WiFi.SSID(thisNet));
+      matrix.print(" Signal: ");
+      matrix.print(WiFi.RSSI(thisNet));
+      matrix.print(" dBm");
+      matrix.print(" Encryption: ");
+      printEncryptionTypeOnMatrix(WiFi.encryptionType(thisNet));
+      matrix.endText(SCROLL_LEFT);
+      delay(2500);  // Display each network for 8 seconds
+    }
+  }
+
+  matrix.endDraw();
+}
+
+void printEncryptionTypeOnMatrix(int thisType) {
+  switch (thisType) {
+    case ENC_TYPE_WEP:
+      matrix.println("WEP");
+      break;
+    case ENC_TYPE_WPA:
+      matrix.println("WPA");
+      break;
+    case ENC_TYPE_WPA2:
+      matrix.println("WPA2");
+      break;
+    case ENC_TYPE_WPA3:
+      matrix.print("WPA3");
+      break;   
+    case ENC_TYPE_NONE:
+      matrix.println("None");
+      break;
+    case ENC_TYPE_AUTO:
+      matrix.println("Auto");
+      break;
+    case ENC_TYPE_UNKNOWN:
+    default:
+      matrix.println("Unknown");
+      break;
+  }
+}
